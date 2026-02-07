@@ -1,0 +1,15 @@
+node_modules
+dist
+.output
+.git
+.DS_Store
+apps/**/node_modules
+apps/**/.tanstack
+apps/**/.output
+apps/**/dist
+apps/**/.env
+apps/**/.env.*
+coverage
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml

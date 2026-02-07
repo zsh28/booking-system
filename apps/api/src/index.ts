@@ -8,7 +8,7 @@ import providerRoutes from './routes/providerRoutes'
 import { getOpenApiDocument } from './openapi'
 
 const app = express()
-const port = Number(process.env.PORT) || 3000
+const port = Number(process.env.API_PORT) || 3000
 
 app.use(cors())
 app.use(express.json())
