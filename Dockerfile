@@ -11,6 +11,7 @@ COPY . .
 
 ENV VITE_API_URL=http://localhost:3000
 ENV PUBLIC_API_URL=http://localhost:3000
+ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db?schema=public
 
 RUN npx prisma generate --config apps/api/prisma.config.ts
 RUN npm run build --workspace @appointment-booking/api

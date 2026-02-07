@@ -90,9 +90,3 @@ The root `Dockerfile` builds both apps and runs them with PM2. The API runs on `
 docker build -t slotbook .
 docker run -e DATABASE_URL=... -e JWT_SECRET=... -e PORT=3001 -p 3000:3000 -p 3001:3001 slotbook
 ```
-
-## Notes
-
-- Slots are derived dynamically; there is no slots table.
-- Cancelling an appointment makes the slot available again.
-- Enum labels are normalized in the UI for readability.
