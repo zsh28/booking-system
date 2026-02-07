@@ -1,5 +1,8 @@
 import { z } from 'zod'
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 import { Role, ServiceType } from '@prisma/client'
+
+extendZodWithOpenApi(z)
 
 export const registerSchema = z.object({
   name: z.string().min(1),
