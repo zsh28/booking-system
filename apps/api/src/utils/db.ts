@@ -1,7 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
-import 'dotenv/config'
+
+if (process.env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('dotenv/config')
+}
 
 declare global {
   var prisma: PrismaClient | undefined
