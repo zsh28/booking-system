@@ -10,3 +10,4 @@ coverage/
 *.tsbuildinfo
 *.bak
 *.tmp
+/generated/prisma
