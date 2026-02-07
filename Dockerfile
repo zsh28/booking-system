@@ -5,14 +5,14 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/web/package.json ./apps/
 
-RUN npm install
+RUN npm install --include=dev
 
 COPY . .
 
 ENV VITE_API_URL=http://localhost:3000
 ENV PUBLIC_API_URL=http://localhost:3000
 
-RUN npm run prisma:generate --workspace @appointment-booking/api
+RUN npx prisma generate --config apps/api/prisma.config.ts
 RUN npm run build --workspace @appointment-booking/api
 RUN npm run build --workspace web
 
