@@ -11,7 +11,8 @@ module.exports = {
       name: 'web',
       script: 'apps/web/dist/server/server.js',
       env: {
-        PORT: process.env.PORT
+        PORT: process.env.PORT || '3000',
+        HOST: '0.0.0.0'
       }
     }
   ]
