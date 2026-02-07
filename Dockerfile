@@ -36,6 +36,7 @@ COPY --from=build /app/apps/api/dist /app/apps/api/dist
 COPY --from=build /app/apps/api/prisma /app/apps/api/prisma
 COPY --from=build /app/apps/web/dist /app/apps/web/dist
 COPY --from=build /app/node_modules/.prisma /app/node_modules/.prisma
+COPY --from=build /app/ecosystem.config.cjs /app/ecosystem.config.cjs
 
 ENV NODE_ENV=production
 ENV API_PORT=3000
