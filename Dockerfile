@@ -3,7 +3,9 @@ FROM node:20-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY apps/api/package.json apps/web/package.json ./apps/
+RUN mkdir -p apps/api apps/web
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
 
 RUN npm install --include=dev
 
@@ -24,12 +26,16 @@ WORKDIR /app
 RUN npm install -g pm2
 
 COPY --from=build /app/package.json /app/package-lock.json ./
-COPY --from=build /app/node_modules ./node_modules
+RUN mkdir -p apps/api apps/web
 COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
+COPY --from=build /app/apps/web/package.json /app/apps/web/package.json
+
+RUN npm install --omit=dev
+
 COPY --from=build /app/apps/api/dist /app/apps/api/dist
 COPY --from=build /app/apps/api/prisma /app/apps/api/prisma
-COPY --from=build /app/apps/web/package.json /app/apps/web/package.json
 COPY --from=build /app/apps/web/dist /app/apps/web/dist
+COPY --from=build /app/node_modules/.prisma /app/node_modules/.prisma
 
 ENV NODE_ENV=production
 ENV API_PORT=3000
