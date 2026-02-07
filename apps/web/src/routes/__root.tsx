@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import Header from '../components/Header'
+import { ToastContainer } from 'react-toastify'
 
 import appCss from '../styles.css?url'
 
@@ -17,7 +18,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Slotbook | Appointment Booking',
       },
     ],
     links: [
@@ -40,6 +41,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <Header />
         {children}
+        <ToastContainer
+          position="top-right"
+          autoClose={3500}
+          hideProgressBar
+          newestOnTop
+          closeOnClick
+          pauseOnFocusLoss
+          pauseOnHover
+          theme="dark"
+        />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

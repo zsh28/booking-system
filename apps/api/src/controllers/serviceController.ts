@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { AppointmentStatus, Prisma, ServiceType } from '@prisma/client'
 import { prisma } from '../utils/db'
-import { createServiceSchema, setAvailabilitySchema, dateQuerySchema } from '../types/validators'
+import { createServiceSchema, updateServiceSchema, setAvailabilitySchema, availabilityBatchSchema, dateQuerySchema } from '../types/validators'
 import { generateSlots } from '../utils/slots'
 
 const serviceTypes = Object.values(ServiceType)
@@ -31,6 +31,45 @@ export const createService = async (req: Request, res: Response) => {
       name: service.name,
       type: service.type,
       durationMinutes: service.durationMinutes
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: error.errors })
+    }
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const updateService = async (req: Request, res: Response) => {
+  try {
+    const serviceId = Array.isArray(req.params.serviceId)
+      ? req.params.serviceId[0]
+      : req.params.serviceId
+    const providerId = req.user!.userId
+    const data = updateServiceSchema.parse(req.body)
+
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId }
+    })
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+
+    if (service.providerId !== providerId) {
+      return res.status(403).json({ error: 'Service does not belong to provider' })
+    }
+
+    const updated = await prisma.service.update({
+      where: { id: serviceId },
+      data
+    })
+
+    return res.json({
+      id: updated.id,
+      name: updated.name,
+      type: updated.type,
+      durationMinutes: updated.durationMinutes
     })
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -78,6 +117,103 @@ export const setAvailability = async (req: Request, res: Response) => {
     })
 
     return res.status(201).json({ message: 'Availability set successfully' })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: error.errors })
+    }
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+const hasOverlaps = (entries: Array<{ dayOfWeek: number; startTime: string; endTime: string }>) => {
+  const grouped: Record<number, Array<{ startTime: string; endTime: string }>> = {}
+  for (const entry of entries) {
+    grouped[entry.dayOfWeek] = grouped[entry.dayOfWeek] || []
+    grouped[entry.dayOfWeek].push({ startTime: entry.startTime, endTime: entry.endTime })
+  }
+
+  return Object.values(grouped).some((list) => {
+    const sorted = list.sort((a, b) => (a.startTime < b.startTime ? -1 : 1))
+    for (let i = 1; i < sorted.length; i += 1) {
+      if (sorted[i].startTime < sorted[i - 1].endTime) return true
+    }
+    return false
+  })
+}
+
+export const getAvailability = async (req: Request, res: Response) => {
+  try {
+    const serviceId = Array.isArray(req.params.serviceId)
+      ? req.params.serviceId[0]
+      : req.params.serviceId
+    const providerId = req.user!.userId
+
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId }
+    })
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+
+    if (service.providerId !== providerId) {
+      return res.status(403).json({ error: 'Service does not belong to provider' })
+    }
+
+    const availabilities = await prisma.availability.findMany({
+      where: { serviceId },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }]
+    })
+
+    return res.json(
+      availabilities.map((avail) => ({
+        dayOfWeek: avail.dayOfWeek,
+        startTime: avail.startTime,
+        endTime: avail.endTime
+      }))
+    )
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const replaceAvailability = async (req: Request, res: Response) => {
+  try {
+    const serviceId = Array.isArray(req.params.serviceId)
+      ? req.params.serviceId[0]
+      : req.params.serviceId
+    const providerId = req.user!.userId
+    const entries = availabilityBatchSchema.parse(req.body)
+
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId }
+    })
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+
+    if (service.providerId !== providerId) {
+      return res.status(403).json({ error: 'Service does not belong to provider' })
+    }
+
+    if (hasOverlaps(entries)) {
+      return res.status(409).json({ error: 'Overlapping availability' })
+    }
+
+    await prisma.$transaction([
+      prisma.availability.deleteMany({ where: { serviceId } }),
+      prisma.availability.createMany({
+        data: entries.map((entry) => ({
+          serviceId,
+          dayOfWeek: entry.dayOfWeek,
+          startTime: entry.startTime,
+          endTime: entry.endTime
+        }))
+      })
+    ])
+
+    return res.status(200).json({ message: 'Availability updated' })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors })

@@ -59,3 +59,25 @@ export const getProviderSchedule = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+export const getProviderServices = async (req: Request, res: Response) => {
+  try {
+    const providerId = req.user!.userId
+
+    const services = await prisma.service.findMany({
+      where: { providerId },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return res.json(
+      services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        type: service.type,
+        durationMinutes: service.durationMinutes
+      }))
+    )
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}

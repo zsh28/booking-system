@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { AppointmentStatus, Prisma } from '@prisma/client'
+import { AppointmentStatus, Prisma, Role } from '@prisma/client'
 import { prisma } from '../utils/db'
 import { bookAppointmentSchema } from '../types/validators'
 import { validateSlotAvailability } from '../utils/slots'
@@ -11,6 +11,16 @@ type AppointmentWithService = Prisma.AppointmentGetPayload<{
       select: {
         name: true
         type: true
+      }
+    }
+  }
+}>
+
+type AppointmentWithServiceAndProvider = Prisma.AppointmentGetPayload<{
+  include: {
+    service: {
+      select: {
+        providerId: true
       }
     }
   }
@@ -61,7 +71,7 @@ export const bookAppointment = async (req: Request, res: Response) => {
       where: { serviceId }
     })
 
-    const appointment = await prisma.$transaction(async (tx) => {
+    const appointment = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const appointments = await tx.appointment.findMany({
         where: {
           serviceId,
@@ -136,6 +146,8 @@ export const getMyAppointments = async (req: Request, res: Response) => {
 
     return res.json(
       appointments.map((appt: AppointmentWithService) => ({
+        id: appt.id,
+        serviceId: appt.serviceId,
         serviceName: appt.service.name,
         type: appt.service.type,
         date: appt.date,
@@ -144,6 +156,49 @@ export const getMyAppointments = async (req: Request, res: Response) => {
         status: appt.status
       }))
     )
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const cancelAppointment = async (req: Request, res: Response) => {
+  try {
+    const appointmentId = Array.isArray(req.params.appointmentId)
+      ? req.params.appointmentId[0]
+      : req.params.appointmentId
+    const userId = req.user!.userId
+    const role = req.user!.role
+
+    const appointment = (await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { service: { select: { providerId: true } } }
+    })) as AppointmentWithServiceAndProvider | null
+
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' })
+    }
+
+    const isUserOwner = appointment.userId === userId
+    const isProviderOwner = appointment.service.providerId === userId
+
+    if (role === Role.USER && !isUserOwner) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    if (role === Role.SERVICE_PROVIDER && !isProviderOwner) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      return res.status(409).json({ error: 'Appointment already cancelled' })
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: AppointmentStatus.CANCELLED }
+    })
+
+    return res.json({ id: updated.id, status: updated.status })
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error' })
   }
