@@ -39,9 +39,9 @@ COPY --from=build /app/node_modules/.prisma /app/node_modules/.prisma
 COPY --from=build /app/ecosystem.config.cjs /app/ecosystem.config.cjs
 
 ENV NODE_ENV=production
-ENV API_PORT=3000
-ENV VITE_API_URL=http://localhost:3000
-ENV PUBLIC_API_URL=http://localhost:3000
+ENV API_PORT=3001
+ENV VITE_API_URL=http://localhost:3001
+ENV PUBLIC_API_URL=http://localhost:3001
 
 EXPOSE 3000 3001
 
