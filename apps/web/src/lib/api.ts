@@ -6,7 +6,7 @@ export type ApiError = {
 const baseUrl =
   (import.meta as any).env.PUBLIC_API_URL ||
   (import.meta as any).env.VITE_API_URL ||
-  'http://localhost:3000'
+  ''
 
 const withAuth = (token?: string): HeadersInit =>
   token ? { Authorization: `Bearer ${token}` } : {}
