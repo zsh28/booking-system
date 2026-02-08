@@ -44,7 +44,7 @@ const apiPrefixes = [
 
 if (process.env.NODE_ENV === 'production' && fs.existsSync(webDist)) {
   app.use(express.static(webDist))
-  app.get('/*', (req, res, next) => {
+  app.get(/.*/, (req, res, next) => {
     if (apiPrefixes.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`))) {
       return next()
     }
